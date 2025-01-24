@@ -1,6 +1,10 @@
-from PyQt6.QtWidgets import QMainWindow, QLabel, QVBoxLayout, QWidget, QListWidget, QPushButton, QHBoxLayout, QLineEdit, QScrollArea, QSizePolicy, QMessageBox
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtWidgets import QMainWindow, QLabel, QVBoxLayout, QWidget, QListWidget, QPushButton, QHBoxLayout, QLineEdit, QScrollArea, QSizePolicy, QMessageBox, QDialog
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QPixmap
+from ui.car_details_window import CarDetailsWindow
 from ui.account_window import AccountWindow
+from PyQt6.QtCore import QTimer
+
 
 class CustomerWindow(QMainWindow):
     def __init__(self, db, parent=None, user_id=None):
@@ -11,7 +15,8 @@ class CustomerWindow(QMainWindow):
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
 
-        # Черно-красная тема
+        self.showMaximized()
+
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #222222;
@@ -38,10 +43,13 @@ class CustomerWindow(QMainWindow):
 
         self.setup_ui()
 
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.load_cars)
+        self.timer.start(5000)
+
     def setup_ui(self):
         self.layout = QVBoxLayout(self.central_widget)
 
-        # --- Верхняя панель поиска/фильтров ---
         self.search_bar = QLineEdit()
         self.search_bar.setPlaceholderText("Поиск автомобиля...")
         self.search_button = QPushButton("Поиск")
@@ -53,43 +61,33 @@ class CustomerWindow(QMainWindow):
 
         self.layout.addLayout(self.search_layout)
 
-        # --- Scroll Area ---
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_content = QWidget()
         self.scroll_layout = QVBoxLayout(self.scroll_content)
 
-        # --- Список марок автомобилей ---
         self.makes_list = QListWidget()
-        self.makes_list.itemClicked.connect(self.filter_by_make)  # Connect item click event
+        self.makes_list.itemClicked.connect(self.filter_by_make)
         self.scroll_layout.addWidget(QLabel("Марки автомобилей"))
         self.scroll_layout.addWidget(self.makes_list)
         self.load_makes()
 
-        # --- Список объявлений ---
         self.car_list = QListWidget()
         self.car_list.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.scroll_layout.addWidget(QLabel("Объявления"))
         self.scroll_layout.addWidget(self.car_list)
 
-        # --- Кнопка заказа ---
-        self.order_button = QPushButton("Заказать")
-        self.scroll_layout.addWidget(self.order_button)
-
         self.scroll_area.setWidget(self.scroll_content)
         self.layout.addWidget(self.scroll_area)
 
-        # Подключение кнопок
         self.search_button.clicked.connect(self.perform_search)
-        self.order_button.clicked.connect(self.place_order)
         self.account_button.clicked.connect(self.show_account)
 
-        self.load_cars()
+        self.view_button = QPushButton("Посмотреть")
+        self.view_button.clicked.connect(self.show_car_details)
+        self.layout.addWidget(self.view_button)
 
-        # Set up a timer to check car orders every 5 seconds
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.check_car_orders)
-        self.timer.start(5000)  # 5000 milliseconds = 5 seconds
+        self.load_cars()
 
     def load_makes(self):
         makes = self.db.get_makes()
@@ -120,22 +118,18 @@ class CustomerWindow(QMainWindow):
             if not self.is_car_in_order(car['id']):
                 self.car_list.addItem(f"{car['id']} {car['make']} {car['model']} ({car['year']}) - {car['price']}")
 
-    def place_order(self):
-        selected_car = self.car_list.currentItem()
-        if selected_car:
-            car_info = selected_car.text().split(" - ")
-            car_id = car_info[0].split()[0]  # Assuming the car ID is the first part of the item text
-            user_id = self.user_id
-            try:
-                if self.is_car_in_order(int(car_id)):
-                    QMessageBox.critical(self, "Ошибка", "Этот автомобиль уже находится в заказе.")
-                else:
-                    self.db.place_order(user_id, int(car_id))
-                    QMessageBox.information(self, "Успешно!", "Заказ оформлен успешно! Его статус можно посмотреть в личном кабинете")
-            except Exception as e:
-                QMessageBox.critical(self, "Ошибка", f"Ошибка при оформлении заказа: {e}")
+    def show_car_details(self):
+        selected_item = self.car_list.currentItem()
+        if selected_item:
+            car_id = int(selected_item.text().split()[0])
+            car_details = self.db.get_car_details(car_id)
+            if car_details:
+                self.car_details_window = CarDetailsWindow(car_details, self.db, self)
+                self.car_details_window.show()
+            else:
+                QMessageBox.critical(self, "Ошибка", "Не удалось получить детали автомобиля.")
         else:
-            QMessageBox.warning(self, "Ошибка", "Пожалуйста выберите машину для заказа.")
+            QMessageBox.warning(self, "Внимание", "Пожалуйста, выберите автомобиль из списка.")
 
     def show_account(self):
         user_id = self.user_id

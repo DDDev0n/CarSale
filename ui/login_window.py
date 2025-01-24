@@ -45,13 +45,18 @@ class LoginWindow(QMainWindow):
             QMessageBox.critical(self, "Ошибка входа", "Пароль должен содержать не менее 6 символов.")
             return
 
-        role_id, user_id = self.db.validate_user(email, password)
+        result = self.db.validate_user(email, password)
+        if result is None:
+            QMessageBox.critical(self, "Ошибка", "Неправильный email или пароль")
+            return
+
+        role_id, user_id = result
         if role_id == 1:
             self.admin_window = AdminWindow(self.db)
             self.admin_window.show()
             self.login_successful.emit(role_id)
         elif role_id == 2:
-            self.manager_window = ManagerWindow(self.db)
+            self.manager_window = ManagerWindow(self.db, manager_id=user_id)
             self.manager_window.show()
             self.login_successful.emit(role_id)
         elif role_id == 3:
@@ -61,7 +66,7 @@ class LoginWindow(QMainWindow):
         else:
             QMessageBox.critical(self, "Ошибка входа", "Неверный email или пароль.")
 
-        self.hide()  # Hide the login window after showing the respective window
+        self.hide()
 
     def register(self):
         self.register_window = RegisterWindow(self.db)

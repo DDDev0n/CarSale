@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QLabel, QTableWidget, QTableWidgetItem, QPushButton, QMessageBox, QAbstractItemView
+from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QTableWidget, QTableWidgetItem, QPushButton, QMessageBox, QAbstractItemView
 from PyQt6.QtCore import Qt
 
 class AccountWindow(QMainWindow):
@@ -13,6 +13,7 @@ class AccountWindow(QMainWindow):
 
         self.apply_styles()
         self.setup_ui()
+        self.showMaximized()
 
     def apply_styles(self):
         self.setStyleSheet("""
@@ -42,13 +43,18 @@ class AccountWindow(QMainWindow):
     def setup_ui(self):
         self.layout = QVBoxLayout(self.central_widget)
 
-        # User information
+        self.back_button_layout = QHBoxLayout()
+        self.back_button_layout.addStretch()
+        self.back_button = QPushButton("Назад")
+        self.back_button.clicked.connect(self.go_back)
+        self.back_button_layout.addWidget(self.back_button)
+        self.layout.addLayout(self.back_button_layout)
+
         user_info = self.db.get_user_info(self.user_id)
         self.layout.addWidget(QLabel(f"Имя: {user_info['first_name']}"))
         self.layout.addWidget(QLabel(f"Фамилия: {user_info['last_name']}"))
         self.layout.addWidget(QLabel(f"Email: {user_info['email']}"))
 
-        # Orders table
         self.orders_table = QTableWidget()
         self.orders_table.setColumnCount(4)
         self.orders_table.setHorizontalHeaderLabels(["ID", "Модель", "Марка", "Статус"])
@@ -56,7 +62,6 @@ class AccountWindow(QMainWindow):
         self.layout.addWidget(self.orders_table)
         self.load_orders()
 
-        # Pay and Cancel buttons
         self.pay_button = QPushButton("Оплатить")
         self.cancel_button = QPushButton("Отменить")
         self.pay_button.setEnabled(False)
@@ -68,30 +73,27 @@ class AccountWindow(QMainWindow):
         self.pay_button.clicked.connect(self.pay_order)
         self.cancel_button.clicked.connect(self.cancel_order)
 
-        # Back button
-        self.back_button = QPushButton("Назад")
-        self.back_button.clicked.connect(self.go_back)
-        self.layout.addWidget(self.back_button)
-
     def load_orders(self):
         orders = self.db.get_user_orders(self.user_id)
-        self.orders_table.setRowCount(0)  # Clear existing rows
+        self.orders_table.setRowCount(0)
         for order in orders:
-            if order['order_status'] == 'Отменён':
-                continue  # Skip canceled orders
             row_position = self.orders_table.rowCount()
             self.orders_table.insertRow(row_position)
-            self.orders_table.setItem(row_position, 0, QTableWidgetItem(str(order['id'])))
+            id_item = QTableWidgetItem()
+            id_item.setData(Qt.ItemDataRole.DisplayRole, order['id'])
+            self.orders_table.setItem(row_position, 0, id_item)
             self.orders_table.setItem(row_position, 1, QTableWidgetItem(order['model']))
             self.orders_table.setItem(row_position, 2, QTableWidgetItem(order['make']))
             self.orders_table.setItem(row_position, 3, QTableWidgetItem(order['order_status']))
+        self.orders_table.setSortingEnabled(True)
+        self.orders_table.sortItems(0, Qt.SortOrder.AscendingOrder)
 
     def on_order_selected(self):
         selected_items = self.orders_table.selectedItems()
         if len(selected_items) >= 4:
             order_status = selected_items[3].text()
-            self.pay_button.setEnabled(order_status != 'Оплачен')
-            self.cancel_button.setEnabled(True)
+            self.pay_button.setEnabled(order_status not in ['Оплачен', 'Готов'])
+            self.cancel_button.setEnabled(order_status != 'Отменён')
         else:
             self.pay_button.setEnabled(False)
             self.cancel_button.setEnabled(False)
@@ -123,3 +125,8 @@ class AccountWindow(QMainWindow):
     def go_back(self):
         self.parent_window.show()
         self.close()
+
+    def closeEvent(self, event):
+        if event.spontaneous():
+            QApplication.instance().quit()
+        event.accept()

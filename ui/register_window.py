@@ -1,4 +1,5 @@
 from PyQt6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QPushButton, QLineEdit, QMessageBox, QDateEdit
+from PyQt6.QtCore import Qt
 
 class RegisterWindow(QMainWindow):
     def __init__(self, db, parent=None):
@@ -6,6 +7,7 @@ class RegisterWindow(QMainWindow):
         self.setWindowTitle("Регистрация")
         self.db = db
         self.central_widget = QWidget()
+        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint)
         self.setCentralWidget(self.central_widget)
         self.setup_ui()
 

@@ -23,8 +23,7 @@ class MainWindow(QMainWindow):
         self.logout_button = QPushButton("Выйти")
         self.logout_button.clicked.connect(self.logout)
 
-        # Role-specific widgets
-        if self.role == 'admin':  # Example: Role is 'admin'
+        if self.role == 'admin':
             self.admin_label = QLabel("Панель администратора")
             self.admin_layout = QGridLayout()
             self.admin_layout.addWidget(QLabel("Username:"), 0,0)
@@ -34,7 +33,7 @@ class MainWindow(QMainWindow):
             self.user_list = QListWidget()
             self.admin_layout.addWidget(self.user_list, 1, 0, 1, 2)
 
-        elif self.role == 'customer':  # Example: Role is 'customer'
+        elif self.role == 'customer':
             self.customer_label = QLabel("Панель покупателя")
 
         else:
