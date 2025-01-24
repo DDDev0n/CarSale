@@ -587,3 +587,27 @@ class Database:
         except Exception as e:
             print(f"Error: {e}")
             raise
+
+    def fetch_users(self):
+        query = "SELECT id, email, last_name, phone_number, birthdate FROM Users where role_id = 3 "
+        return self.execute_query(query)
+
+    def fetch_cars(self):
+        query = "SELECT id, model, year, price, mileage, color FROM Cars"
+        return self.execute_query(query)
+
+    def fetch_orders(self):
+        query = "SELECT id, user_id, car_id, order_date FROM Orders"
+        return self.execute_query(query)
+
+    def fetch_managers(self):
+        query = "SELECT id, email, last_name, phone_number, birthdate FROM Users WHERE role_id = 2"
+        return self.execute_query(query)
+
+    def fetch_status_history(self):
+        query = """
+        SELECT osh.id, osh.order_id, os.title, osh.status_date 
+        FROM OrderStatusHistory osh 
+        JOIN OrderStatuses os ON osh.status_id = os.id
+        """
+        return self.execute_query(query)

@@ -4,6 +4,7 @@ from PyQt6.QtCore import Qt
 from ui.car_list_window import CarListWindow
 from ui.user_list_window import UserListWindow
 from ui.manager_list_window import ManagerListWindow
+from ui.reports_window import ReportsWindow
 
 class AdminWindow(QMainWindow):
     def __init__(self, db, parent=None):
@@ -78,4 +79,5 @@ class AdminWindow(QMainWindow):
         self.hide()
 
     def view_reports(self):
-        QMessageBox.information(self, "Отчёты", "Это откроет интерфейс отчётов.")
+        self.reports_window = ReportsWindow(self.db, self)
+        self.reports_window.show()
