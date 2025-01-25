@@ -4,6 +4,8 @@ from ui.manager_account_window import ManagerAccountWindow
 from ui.order_history_window import OrderHistoryWindow
 from ui.add_car_window import AddCarWindow
 
+
+
 class ManagerWindow(QMainWindow):
     def __init__(self, db, parent=None, manager_id=None):
         super().__init__(parent)
@@ -89,7 +91,7 @@ class ManagerWindow(QMainWindow):
     def open_add_car_window(self):
         self.add_car_window = AddCarWindow(self.db, self)
         self.add_car_window.show()
-        self.hide()
+
 
     def closeEvent(self, event):
         self.close()
